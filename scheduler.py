@@ -31,7 +31,6 @@ class EstablishConnection:
 
 
 est_connection = EstablishConnection()
-new_connection = est_connection.database_connection()
 
 
 def send_email(receiver, recording_name, sender='ishaanrdave1991@gmail.com', password='czbl zksg omef dgjy'):
@@ -42,7 +41,7 @@ def send_email(receiver, recording_name, sender='ishaanrdave1991@gmail.com', pas
             Hey, Someone just shared a video recording with you. You can watch it at below link.
     
             File: {recording_name}
-            http://192.168.0.101:8501/View_uploaded
+            http://192.168.0.102:8503
             """
         email_message.set_content(body_content)
         # Create gmail server
@@ -92,19 +91,27 @@ def mark_as_sent(sent_file_id):
 
 
 def main(todays_records):
+    print("Recordings to send: ", len(todays_records),
+          "(", datetime.now(), ")")
     if len(todays_records) > 0:
+        now = datetime.now().minute
         for index, file_row in enumerate(todays_records):
-            video_send_date = datetime.strptime(file_row[3], '%Y-%m-%d %H:%M:%S').hour
-            recording_name = file_row[1]
-            receiver_email = file_row[2]
-            email_status = send_email(receiver_email, recording_name)
-            if email_status:
-                file_id = file_row[0]
-                mark_as_sent(file_id)
+            video_send_time = datetime.strptime(file_row[3], '%Y-%m-%d %H:%M:%S').minute
+            if video_send_time <= now:
+                recording_name = file_row[1]
+                receiver_email = file_row[2]
+                email_status = send_email(receiver_email, recording_name)
+                if email_status:
+                    file_id = file_row[0]
+                    mark_as_sent(file_id)
 
 
 while True:
+    new_connection = est_connection.database_connection()
     existing_records = fetch_unsend_records()
     main(existing_records)
     existing_records.clear()
-    time.sleep(300)          # execution every 5 minutes
+    new_connection.commit()
+    new_connection.close()
+    time.sleep(900)          # execution every 15 minutes
+    # time.sleep(60)
